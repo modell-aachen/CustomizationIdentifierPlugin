@@ -130,9 +130,12 @@ sub evaluateFiles {
         foreach (@allFiles){
             push(@customFiles, $_) unless basename($_) =~ /^($ignorePattern)\.($ignorePatternFiletype)/ ;
         }
-        @customFiles = sort map{ basename($_).",".$outputtype.",".$_ } @customFiles; 
-        _writeCsv(1,\@customFiles);
+        if( @customFiles ){
+           @customFiles = sort map{ basename($_).",".$outputtype.",".$_ } @customFiles; 
+           _writeCsv(1,\@customFiles);
+        }
     }
+    return 1;
 }
 
 sub evaluateSitePrefs {
@@ -187,7 +190,14 @@ sub getFileList{
     my $ignoreSubDirs = shift;
     my $dirHandle;
     my @files;
-    my @fileList;
+    my @fileList = ();
+
+    debug($dir);
+
+    if( !(-d $dir) ){
+        debug("$dir not found");
+        return @fileList;
+    }
 
     opendir($dirHandle, $dir);
     @files = grep { not /^(\.)+$/ } readdir($dirHandle);
@@ -196,7 +206,7 @@ sub getFileList{
     @files = map { $dir . '/' . $_ } @files;
 
     foreach (@files){
-        if (-d $_ ){
+        if ( -d $_ ){
             # skip all sub directories which are defined in $ignoreSubDirs
             push(@fileList, getFileList($_,$ignoreSubDirs)) unless basename($_) =~ /($ignoreSubDirs)/;
         }else{

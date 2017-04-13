@@ -1,0 +1,119 @@
+{
+    "outputsuffix": "_Customer_Overview_Customizing",
+    "columntitles": "File,Type,Path",
+    "rules": [
+        {
+            "type": "file",
+            "outputtype": "Skin-Template",
+            "path": "data/Custom",
+            "name": "*Template",
+            "filetype": ["txt"],
+            "ignore": {
+                "subpath": ["*,pfv"],
+                "name": [
+                    "WebAtom",
+                    "WebChanges",
+                    "WebContentTemplates",
+                    "WebCreateNewTopic",
+                    "WebHome",
+                    "WebIndex",
+                    "WebNotify",
+                    "WebPreferences",
+                    "WebRss",
+                    "WebSearch",
+                    "WebSearchAdvanced",
+                    "WebStatistics",
+                    "WebTopicList"
+                ],
+                "filetype": []
+            }
+        },
+        {
+            "type": "file",
+            "outputtype": "Custom-File",
+            "path": "data/Custom",
+            "name": "*",
+            "filetype": ["*"],
+            "ignore": {
+                "subpath": ["*,pfv"],
+                "name": [
+                    "WebAtom",
+                    "WebChanges",
+                    "WebContentTemplates",
+                    "WebCreateNewTopic",
+                    "WebHome",
+                    "WebIndex",
+                    "WebNotify",
+                    "WebPreferences",
+                    "WebRss",
+                    "WebSearch",
+                    "WebSearchAdvanced",
+                    "WebStatistics",
+                    "WebTopicList",
+                    "*Template"
+                ],
+                "filetype": []
+            }
+        },
+        {
+            "type": "file",
+            "outputtype": "Custom-Pub-File",
+            "path": "pub/Custom",
+            "name": "*",
+            "filetype": [],
+            "ignore": {
+                "subpath": ["*,pfv"],
+                "name": [],
+                "filetype": []
+            }
+        }, 
+        {
+            "type": "file",
+            "outputtype": "System-Template",
+            "path": "templates",
+            "name": "*custom*",
+            "filetype": ["*"],
+            "ignore": {
+                "subpath": [],
+                "name": [],
+                "filetype": []
+            }
+        },
+        {
+            "type": "plugin",
+            "standard": [
+                "MinutesAppContrib",
+                "TasksAPIPlugin",
+                "AppManagerPlugin",
+                "VueJSPlugin"
+            ],
+            "outputtype": "Plugin"
+        },
+        {
+            "type": "sitepref",
+            "outputtype": "CSS",
+            "preference": "FOSWIKI_PROJECT_URL",
+            "standardvalue": "",
+            "standardtype": "path"
+        },
+        {
+            "type": "sitepref",
+            "outputtype": "Skin-Favicon",
+            "preference": "FAVICON",
+            "standardvalue": "/pub/System/ModacSkinTheme/ModacSkinLogos/favicon.ico",
+            "standardtype": "path"
+        },
+        {
+            "type": "sitepref",
+            "outputtype": "Skin-Logo",
+            "preference": "WIKILOGOIMG",
+            "standardvalue": "/pub/System/ModacSkinTheme/ModacSkinLogos/qwiki-logo_small.png",
+            "standardtype": "path"
+        },
+        {
+            "type": "sitepref",
+            "preference": "WIKITOOLNAME",
+            "standardvalue": "Q.wiki"
+        }
+    ]
+}

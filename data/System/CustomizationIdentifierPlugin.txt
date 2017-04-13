@@ -1,0 +1,27 @@
+%META:TOPICPARENT{name="Plugins"}%
+
+---+ Customization Identifier Plugin
+
+%SHORTDESCRIPTION%
+
+Migration-tool to identify Q.wiki customizations. Rules for the identification of customizations are defined using the =customization_definition.json= file in the =tools= directory. The script creates a csv file in the =tools= directory following the default naming scheme =YYMMDD_Customer_Overview_Customizing.csv=.
+
+---++ Usage
+<verbatim>
+cd $FOSWIKI_ROOT/tools
+perl customization_identifier.pm
+</verbatim>
+
+---++ Installation
+%$INSTALL_INSTRUCTIONS%
+
+---++ Plugin Info
+
+|  Author: | Foswiki:Main.FredericKlein |
+|  Copyright: | &copy; 2016, Modell Aachen !GmbH |
+|  License: | GPL ([[http://www.gnu.org/copyleft/gpl.html][GNU General Public License]]) |
+|  Release: | %$RELEASE% |
+|  Version: | %$VERSION% |
+|  Home: | http://www.modell-aachen.de |
+|  Support: | http://www.modell-aachen.de |
+

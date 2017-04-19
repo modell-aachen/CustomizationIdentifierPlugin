@@ -1,6 +1,6 @@
 {
     "outputsuffix": "_Customer_Overview_Customizing",
-    "columntitles": "File,Type,Path",
+    "columntitles": "File,Type,Path,URL",
     "rules": [
         {
             "type": "file",
@@ -52,7 +52,7 @@
                     "WebTopicList",
                     "*Template"
                 ],
-                "filetype": []
+                "filetype": ["*"]
             }
         },
         {
@@ -71,7 +71,7 @@
             "type": "file",
             "outputtype": "System-Template",
             "path": "templates",
-            "name": "*custom*",
+            "name": "*.custom.*",
             "filetype": ["*"],
             "ignore": {
                 "subpath": [],

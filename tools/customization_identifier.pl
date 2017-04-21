@@ -81,8 +81,8 @@ sub init{
 
 
 sub debug{
-    my @message = @_;
-    print @message, "\n" if $control{debug};
+    my $message = shift;
+    print $message, "\n" if $control{debug};
     return 1;
 }
 
@@ -130,7 +130,9 @@ sub _evaluatePlugins {
             eval "use $_ ()"; warn $@ unless $@ =~ /Subroutine .* redefined at/;
         }
         $releaseString = ${'Foswiki::Plugins::'.$_.'::RELEASE'} || "";
-        $ticketPlugins{$_} = $releaseString unless $releaseString !~ /^\d{2}\s[a-zA-Z]{3}\s\d{4}$/ ;
+        if( $releaseString =~ /^\d{2}\s[a-zA-Z]{3}\s\d{4}$/ ) {
+            $ticketPlugins{$_} = $releaseString;
+        }
     }
 
     @customPlugins = grep { my $temp = $_; ! grep{ $_ eq $temp } keys %ticketPlugins } @customPlugins;
@@ -149,35 +151,37 @@ sub _evaluateFiles {
     my @allFiles;
     my $defaultUrlHost = shift;
     my $rootDir = shift;
+    my $qmPubDir = quotemeta( $Foswiki::cfg{PubDir} ); 
+    my $qmDataDir = quotemeta( $Foswiki::cfg{DataDir} );
 
-    foreach (@fileRules) {
+    foreach my $rule (@fileRules) {
         my @customFiles;
-        my $path = $_->{"path"};
-        my $pattern = $_->{"name"} ;
-        my $outputtype = $_->{"outputtype"} || "custom file";
+        my $path = $rule->{"path"};
+        my $pattern = $rule->{"name"} ;
+        my $outputtype = $rule->{"outputtype"} || "custom file";
         $pattern = _wildcardReplacement($pattern);
-        my $filetypePattern = _escapedJoin("|", $_->{"filetype"} ); # filenames to match
+        my $filetypePattern = _escapedJoin("|", $rule->{"filetype"} ); # filenames to match
         $filetypePattern =~ s/\.$//g; # remove dot before extension
-        my $ignorePattern = _escapedJoin( "|", $_->{"ignore"}->{"name"}, "" ); #  join( "|", @ignoreNames ); # filenames to ignore
-        my $ignorePatternFiletype = _escapedJoin( "|", $_->{"ignore"}->{"filetype"}, "" );# @ignoreFiletype );
-        my $ignoreSubDirPattern =_escapedJoin( "|", $_->{"ignore"}->{"subpath"}, "" ); # sub directories to skip
+        my $ignorePattern = _escapedJoin( "|", $rule->{"ignore"}->{"name"}, "" ); # filenames to ignore
+        my $ignorePatternFiletype = _escapedJoin( "|", $rule->{"ignore"}->{"filetype"}, "" );
+        my $ignoreSubDirPattern =_escapedJoin( "|", $rule->{"ignore"}->{"subpath"}, "" ); # sub directories to skip
 
         if( $pattern !~ /^.*\.[.*]$/ ){
             $pattern .= "/."; #avoid unwanted \.\. before extension
         }
         debug("complete pattern: ".$pattern."($filetypePattern) for ../$path ignoring $ignoreSubDirPattern");
         @allFiles = grep { /^$pattern($filetypePattern)$/ } _getFileList( File::Spec->catdir("..", $path) ,$ignoreSubDirPattern);
-        foreach (@allFiles){
-            push(@customFiles, $_) unless basename($_) =~ /^($ignorePattern)\.($ignorePatternFiletype)/ ;
+        foreach my $file (@allFiles){
+            push(@customFiles, $file) unless basename($file) =~ /^($ignorePattern)\.($ignorePatternFiletype)/ ;
         }
         if( @customFiles ){
-            foreach(@customFiles){
-                (my $path = $_) =~ s/\.\./$rootDir/g;
-                (my $url = $_) =~ s/\.\./$defaultUrlHost/g;
-                if( $path  =~ /^(quotemeta($Foswiki::cfg{PubDir})|quotemeta($Foswiki::cfg{DataDir})).*/g ){
-                    $_ = basename($_).",".$outputtype.",".$path.",".$url;
+            foreach my $customFile (@customFiles){
+                (my $path = $customFile) =~ s/\.\./$rootDir/g;
+                (my $url = $customFile) =~ s/\.\./$defaultUrlHost/g;
+                if( $path  =~ /^($qmPubDir|$qmDataDir).*/g ){
+                    $customFile = basename($customFile).",".$outputtype.",".$path.",".$url;
                 }else{
-                    $_ = basename($_).",".$outputtype.",".$path.",only accessible via SSH";
+                    $customFile = basename($customFile).",".$outputtype.",".$path.",only accessible via SSH";
                 }
             }
             @customFiles = sort @customFiles;
@@ -201,13 +205,13 @@ sub _evaluateSitePrefs {
     my $urlHost = quotemeta($defaultUrlHost);
     my $sitePreferences = File::Spec->catfile("..","data",$Foswiki::cfg{LocalSitePreferences}=~s /\./\//r);
 
-    foreach (@sitePrefRules){
-        my $prefKey = $_->{"preference"} || "";
+    foreach my $rule (@sitePrefRules){
+        my $prefKey = $rule->{"preference"} || "";
         if( $prefKey ){
             my $prefValue = defined $object->getPreference($prefKey) ? $object->getPreference($prefKey) : "missing SitePreference";
-            my $defaultValue = $_->{"standardvalue"} || "";
-            my $outputtype = $_->{"outputtype"} || "custom SitePreference";
-            my $defaultType = $_->{"standardtype"} || "";
+            my $defaultValue = $rule->{"standardvalue"} || "";
+            my $outputtype = $rule->{"outputtype"} || "custom SitePreference";
+            my $defaultType = $rule->{"standardtype"} || "";
 
             if( $prefValue =~ /%/ ){
                 $prefValue = Foswiki::Func::expandCommonVariables($prefValue) =~ s/$urlHost//r;
@@ -273,12 +277,12 @@ sub _getFileList{
 
     @files = map { $dir . '/' . $_ } @files;
 
-    foreach (@files){
-        if ( -d $_ ){
+    foreach my $file (@files){
+        if ( -d $file ){
             # skip all sub directories which are defined in $ignoreSubDirs
-            push(@fileList, _getFileList($_,$ignoreSubDirs)) unless basename($_) =~ /($ignoreSubDirs)/;
+            push(@fileList, _getFileList($file,$ignoreSubDirs)) unless basename($file) =~ /($ignoreSubDirs)/;
         }else{
-            push(@fileList, $_);
+            push(@fileList, $file);
         }
     }
     return @fileList;
@@ -313,13 +317,14 @@ sub _writeCsv {
     my $csvtarget = $control{csvfile};
     my $append = shift;
     my @content = @{$_[0]};
+    return unless @content;
     my $filehandle;
     my $mode = '+>';
     if($append){
         $mode = '+>>';
     }
     if ( open($filehandle, $mode, $csvtarget) ){
-        print $filehandle join("\n",@content)."\n";
+        print $filehandle join("\n", @content)."\n";
         close($filehandle);
     }else{
         $returnVal = 0;

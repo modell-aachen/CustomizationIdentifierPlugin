@@ -1,16 +1,226 @@
 %META:TOPICPARENT{name="Plugins"}%
 
----+ Customization Identifier Plugin
+%TOC%
 
 %SHORTDESCRIPTION%
 
-Migration-tool to identify Q.wiki customizations. Rules for the identification of customizations are defined using the =customization_definition.json= file in the =tools= directory. The script creates a csv file in the =tools= directory following the default naming scheme =YYMMDD_Customer_Overview_Customizing.csv=.
+Migration-tool to identify Q.wiki customizations. Rules for the identification of customizations are defined using the =customization_definition.json=  file in the =tools=  directory. The script creates a csv file in the =System/CustomizationIdentifier=  directory following the default naming scheme =YYMMDD_Customer_Overview_Customizing.csv=  .
 
----++ Usage
+---++ Documentation
+---+++ Configuration
+
+The rule definition file =customization_definition.json=  is extensible.The following settings are available:
+
+"outputsuffix": Default: "Customer_Overview_Customizing"
+
+"columntitles": Columnheaders as comma seperated list. (mandatory)
+
+"rules": Array of rule objects. Each rule object has a mandatory name "type". Depending on the "type" different additional names are available.
+   * *Plugin* rule
+      * "type":"plugin" (mandatory)
+      * "outputtype": Label to be displayed in the =csv= file. Defaults: Plugin (Community) and Plugin (Ticketbranch: $RELEASE)
+      * "standard": Array of Plugins currently considered "Standard-Plugins", which will not be listed in the =csv=. (mandatory)
+   * <strong>AppContrib </strong>rule
+      * "type":"appcontrib" (mandatory)
+      * "outputtype": Label to be displayed in the =csv= file. Defaults: AppContrib (Community) and AppContrib (Ticketbranch: $RELEASE)
+      * "standard": Array of AppContribs currently considered "Standard-AppContribs", which will not be listed in the =csv=. (mandatory)
+   * <strong>SitePreferences </strong>rule
+      * "type":"sitepref" (mandatory)
+      * "outputtype": Label to be displayed in the =csv= file. Default: "custom SitePreference"
+      * "standardvalue": the expected value of the preference (mandatory)
+      * "standardtype": if set to "path" the value gets resolved to local path and url
+   * <strong>WebPreferences </strong>rule
+      * "type":"webpref" (mandatory)
+      * "outputtype": Label to be displayed in the =csv= file. Defaults: for "list": "WebPreference listing: Web"; for "compare": "Custom WebPreference: Web"
+      * "action": "list" or "compare" (mandatory)
+      * "webs": Array of Webs to process. Accepts * as wildcard. Default: user webs
+      * "ignore": Object describing webs, which should be ignored.
+         * "name": Array. Accepts * as wildcard. Default: ""
+      * for "action":"list"
+         * "preferences": Array of Preference-keys to be listed. Accepts * as wildcard. Default: "*"
+      * for "action":"compare"
+         * "preference": Preference-key, for which the related value should be compared to the standardtype (mandatory)
+         * "standardvalue": the expected Standardtype (mandatory)
+        <!-- * "standardtype": if set to "path" the value gets resolved to local path and url -->
+   * <strong>File </strong>rule
+      * "type":"file" (mandatory)
+      * "outputtype": Label to be displayed in the =csv= file. Defaults: "custom file"
+      * "name": Accepts * as wildcard. Default: "*"
+      * "filetype": Array. Accepts * as wildcard. Default "*"
+      * "ignore": Object describing files, which should be ignored.
+         * "subpath": Array. Accepts * as wildcard. Default: ""
+         * "name": Array. Accepts * as wildcard. Default: ""
+         * "filetype": Array. Accepts * as wildcard. Default: ""
+---+++ Example Configuration
+
+<pre class="WYSIWYG_NBNL">
+{
+    "outputsuffix": "_Customer_Overview_Customizing",
+    "columntitles": "File,Type,Path,URL",
+    "rules": [
+        {
+            "type": "file",
+            "outputtype": "Skin-Template",
+            "path": "data/Custom",
+            "name": "*Template",
+            "filetype": ["txt"],
+            "ignore": {
+                "subpath": ["*,pfv"],
+                "name": [
+                    "WebAtom",
+                    "WebChanges",
+                    "WebContentTemplates",
+                    "WebCreateNewTopic",
+                    "WebHome",
+                    "WebIndex",
+                    "WebNotify",
+                    "WebPreferences",
+                    "WebRss",
+                    "WebSearch",
+                    "WebSearchAdvanced",
+                    "WebStatistics",
+                    "WebTopicList"
+                ],
+                "filetype": []
+            }
+        },
+        {
+            "type": "file",
+            "outputtype": "Custom-File",
+            "path": "data/Custom",
+            "name": "*",
+            "filetype": ["*"],
+            "ignore": {
+                "subpath": ["*,pfv"],
+                "name": [
+                    "WebAtom",
+                    "WebChanges",
+                    "WebContentTemplates",
+                    "WebCreateNewTopic",
+                    "WebHome",
+                    "WebIndex",
+                    "WebNotify",
+                    "WebPreferences",
+                    "WebRss",
+                    "WebSearch",
+                    "WebSearchAdvanced",
+                    "WebStatistics",
+                    "WebTopicList",
+                    "*Template"
+                ],
+                "filetype": ["*"]
+            }
+        },
+        {
+            "type": "file",
+            "outputtype": "Custom-Pub-File",
+            "path": "pub/Custom",
+            "name": "*",
+            "filetype": [],
+            "ignore": {
+                "subpath": ["*,pfv"],
+                "name": [],
+                "filetype": []
+            }
+        }, 
+        {
+            "type": "file",
+            "outputtype": "System-Template",
+            "path": "templates",
+            "name": "*.custom.*",
+            "filetype": ["*"],
+            "ignore": {
+                "subpath": [],
+                "name": [],
+                "filetype": []
+            }
+        },
+        {
+            "type": "plugin",
+            "standard": [
+                "ActionTrackerPlugin",
+                "AmpelPlugin",
+                "AppManagerPlugin",
+                [...]
+                "WebLinkPlugin",
+                "WebPrefPlugin",
+                "WysiwygPlugin"
+            ],
+            "outputtype": "Plugin"
+        },
+        {
+            "type": "contrib",
+            "standard": [
+                "CompareRevisionsAddOn",
+                "DBCacheContrib",
+                "FontAwesomeContrib",
+                [...]
+                "StandardsAppContrib",
+                "StringifierContrib",
+                "SwitchableLoginManagerContrib"
+            ],
+            "outputtype": "Contrib"
+        },
+        {
+            "type": "sitepref",
+            "outputtype": "CSS",
+            "preference": "FOSWIKI_PROJECT_URL",
+            "standardvalue": "",
+            "standardtype": "path"
+        },
+        {
+            "type": "sitepref",
+            "preference": "WIKITOOLNAME",
+            "standardvalue": "Q.wiki"
+        },
+        {
+            "type": "webpref",
+            "action": "list",
+            "webs": [],
+            "ignore": {
+                "name": [
+                    "Trash"
+                ]
+            },
+            "preferences": [
+                "DENYWEBVIEW",
+                "ALLOWWEBVIEW",
+            ]
+        },
+        {
+            "type": "webpref",
+            "action": "compare",
+            "webs": [],
+            "ignore": {
+                "name": [
+                    "Trash"
+                ]
+            },
+            "preference": "DENYWEBVIEW",
+            "standardvalue": "WikiGuest"
+        }
+    ]
+}
+</pre>
+
+---+++ Output Format
+<table class="Modac_Standard_Leer" style="width:100%;"> <tbody> <tr> <td style="width: 218px;">Plugins/AppContribs</td> <td style="width: 1429px;">Name,outputtype,absolute path</td> </tr> <tr> <td style="width: 218px;">SitePreferences/WebPreferences</td> <td style="width: 1429px;">Preference-Key,outputtype,Preference-Value</td> </tr> <tr> <td style="width: 218px;"> </td> <td style="width: 1429px;">Preference-Key,outputtype,Preference-Value,Preference-Url (if "standatdtype": "path")</td> </tr> <tr> <td style="width: 218px;">Files</td> <td style="width: 1429px;">Filename,outputtype,absolute path,url</td> </tr> </tbody> </table>
+---+++ <br /> Import into Excel
+   * Go to _Data_ tab
+      * Select _From Text_ in _Get External Data_ group
+   * In the dialog select the csv file
+      * use comma as separator
+      * specify that the first row describes the column headers
+   * To get sortable columns go to <em>Data </em>tab
+      * use _Filter_
+---+++ CLI
+
 <verbatim>
 cd $FOSWIKI_ROOT/tools
 perl customization_identifier.pm
 </verbatim>
+
+<!-- ---+++ Web Interface -->
 
 ---++ Installation
 %$INSTALL_INSTRUCTIONS%

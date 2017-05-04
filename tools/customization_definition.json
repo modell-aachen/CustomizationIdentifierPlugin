@@ -161,6 +161,38 @@
             "outputtype": "Plugin"
         },
         {
+            "type": "contrib",
+            "standard": [
+                "CompareRevisionsAddOn",
+                "DBCacheContrib",
+                "FontAwesomeContrib",
+                "JQMomentContrib",
+                "JQPluginContrib",
+                "JQPrettyPhotoContrib",
+                "JQSelect2Contrib",
+                "JQSerialPagerContrib",
+                "JQTwistyContrib",
+                "JSCalendarContrib",
+                "LdapContrib",
+                "MailTemplatesContrib",
+                "ManualsAppContrib",
+                "MinutesAppContrib",
+                "ModacSkin",
+                "PickADateContrib",
+                "PlainFileStoreContrib",
+                "ProcessesContentContrib",
+                "QwikiContrib",
+                "QwikiFormfieldsContrib",
+                "ResubmissionContrib",
+                "RisksAppContrib",
+                "RollenAppContrib",
+                "StandardsAppContrib",
+                "StringifierContrib",
+                "SwitchableLoginManagerContrib"
+            ],
+            "outputtype": "Contrib"
+        },
+        {
             "type": "sitepref",
             "outputtype": "CSS",
             "preference": "FOSWIKI_PROJECT_URL",
@@ -185,6 +217,27 @@
             "type": "sitepref",
             "preference": "WIKITOOLNAME",
             "standardvalue": "Q.wiki"
+        },
+        {
+            "type": "webpref",
+            "action": "list",
+            "webs": [
+            ],
+            "ignore": {
+                "name": [
+                    "Trash"
+                ]
+            },
+            "preferences": [
+                "DENYWEBVIEW",
+                "ALLOWWEBVIEW",
+                "DENYWEBCHANGE",
+                "ALLOWWEBCHANGE",
+                "DENYWEBRENAME",
+                "ALLOWWEBRENAME",
+                "ALLOWTOPICCHANGE",
+                "ALLOWTOPICRENAME"
+            ]
         }
     ]
 }

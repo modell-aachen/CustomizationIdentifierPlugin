@@ -44,7 +44,7 @@ sub init{
         }
     );
 
-    $control{config} =  _getJSONConfig($control{configfile});
+    $control{config} = _getJSONConfig($control{configfile});
     die("Import of json file failed: no valid definition, aborting.") unless $control{config};
 
     # check proper user is running the script
@@ -71,7 +71,9 @@ sub init{
     _writeCsv(0, \@header );
 
     _evaluateSitePrefs( $defaulturl, $rootdir );
+    _evaluateWebPrefs( $defaulturl, $rootdir );
     _evaluatePlugins();
+    _evaluateContribs();
     _evaluateFiles( $defaulturl, $rootdir );
 
     print("Result accessible at $control{csvfile} or at $defaulturl/pub/System/CustomizationIdentifierPlugin/$prefix$suffix.csv\n");
@@ -120,6 +122,7 @@ sub _evaluatePlugins {
 
     my @pluginConfig = grep { $_->{"type"} eq 'plugin' } @{ $control{config}->{rules} };
     my @standardPlugins = @{ $pluginConfig[0]->{"standard"} };
+    my $outputtype = $pluginConfig[0]->{"outputtype"} || "";
     my @customPlugins = grep {my $temp = $_; ! grep($_ eq $temp, @standardPlugins)} @enabledPlugins;
     my %ticketPlugins = ();
     my $releaseString;
@@ -130,18 +133,82 @@ sub _evaluatePlugins {
             eval "use $_ ()"; warn $@ unless $@ =~ /Subroutine .* redefined at/;
         }
         $releaseString = ${'Foswiki::Plugins::'.$_.'::RELEASE'} || "";
-        if( $releaseString =~ /^\d{2}\s[a-zA-Z]{3}\s\d{4}$/ ) {
+        if( $releaseString =~ /^\d\d?\s[a-zA-Z]{3}\s\d{4}$/ ) {
             $ticketPlugins{$_} = $releaseString;
         }
     }
 
     @customPlugins = grep { my $temp = $_; ! grep{ $_ eq $temp } keys %ticketPlugins } @customPlugins;
-    @customPlugins = sort map{ $_.","."Plugin (Community)".",".$pluginsDir."$_.pm" } @customPlugins;
-    my @ticketPluginsOutput = sort map{ $_.","."Plugin (Ticketbranch: ".$ticketPlugins{$_}."),".$pluginsDir."$_.pm" } keys %ticketPlugins;
+    @customPlugins = sort map{ $_.","."Plugin (Community)".",".$pluginsDir."/$_.pm" } @customPlugins;
+    my @ticketPluginsOutput = sort map{ $_.","."Plugin (Ticketbranch: ".$ticketPlugins{$_}."),".$pluginsDir."/$_.pm" } keys %ticketPlugins;
     _writeCsv(1,\@customPlugins);
     _writeCsv(1,\@ticketPluginsOutput);
     return 1;
 }
+
+
+# checks lib/Foswiki/Contrib/ directory for installed Contribs
+# Non-standard Contribs are listed as well as Contribs on a ticket branch (RELEASE is a date)
+sub _evaluateContribs {
+
+    my $qwikiRootDir = Cwd::realpath( File::Spec->updir );
+    my $contribDir = File::Spec->catdir( $qwikiRootDir,'lib','Foswiki','Contrib' );
+
+    debug($qwikiRootDir);
+    debug($contribDir);
+
+    opendir(my $directoryHandle, $contribDir) or die "Cannot open directory: $!";
+    my @contribs = grep { /(Contrib|Skin).pm$/ } readdir($directoryHandle);
+    closedir($directoryHandle);
+
+    my @contribConfig = grep { $_->{"type"} eq 'contrib' } @{ $control{config}->{rules} };
+    my $outputtype = $contribConfig[0]->{"outputtype"} || "";
+
+    use Data::Dumper;
+
+    my @standardContribs = @{ $contribConfig[0]->{"standard"} };
+    @contribs = sort map { substr($_, 0, -3) } @contribs;
+
+    my @customContribs = grep {my $temp = $_; ! grep($_ eq $temp, @standardContribs)} @contribs;
+    my %ticketContribs = ();
+    my $releaseString;
+
+    for my $pm (@contribs) {
+        my $releaseString;
+        no strict 'refs';
+        unless ( ${'Foswiki::Contrib::' . $pm . '::RELEASE'} || ${'Foswiki::Plugins::' . $pm . '::RELEASE'} ) {
+            require(File::Spec->catfile($contribDir, $pm.".pm" )); 
+        }
+
+        if( defined ${'Foswiki::Contrib::' . $pm . '::RELEASE'} ){
+            $releaseString = ${'Foswiki::Contrib::' . $pm . '::RELEASE'} || ${'Foswiki::Plugins::' . $pm . '::RELEASE'};
+            if ( $releaseString =~ /^\d\d?\s[a-zA-Z]{3}\s\d{4}$/ ) {
+                $ticketContribs{$pm} = $releaseString;
+            }
+        }else{
+            # release string might be defined in related plugin
+            if( ${'Foswiki::Plugins::' . $pm . '::RELEASE'} ){
+                $releaseString = ${'Foswiki::Plugins::' . $pm . '::RELEASE'};
+                if ( $releaseString =~ /^\d\d?\s[a-zA-Z]{3}\s\d{4}$/ ) {
+                    $ticketContribs{$pm} = $releaseString;
+                }
+            }else{
+                debug($pm.": no release string!");
+            }
+        }
+
+    }
+
+    @customContribs = grep { my $temp = $_; ! grep{ $_ eq $temp } keys %ticketContribs } @customContribs;
+    @customContribs = sort map{ $_.","."Contrib (Community)".",".$contribDir."/$_.pm" } @customContribs;
+    my @ticketContribsOutput = sort map{ $_.","."Contrib (Ticketbranch: ".$ticketContribs{$_}."),".$contribDir."/$_.pm" } keys %ticketContribs;
+
+    _writeCsv(1,\@customContribs);
+    _writeCsv(1,\@ticketContribsOutput);
+    return 1;
+
+}
+
 
 # checks for existing files based on rules specified in the json config
 sub _evaluateFiles {
@@ -157,10 +224,10 @@ sub _evaluateFiles {
     foreach my $rule (@fileRules) {
         my @customFiles;
         my $path = $rule->{"path"};
-        my $pattern = $rule->{"name"} ;
+        my $pattern = $rule->{"name"} || "*" ;
         my $outputtype = $rule->{"outputtype"} || "custom file";
         $pattern = _wildcardReplacement($pattern);
-        my $filetypePattern = _escapedJoin("|", $rule->{"filetype"} ); # filenames to match
+        my $filetypePattern = _escapedJoin("|", $rule->{"filetype"}, ".*" ); # filenames to match
         $filetypePattern =~ s/\.$//g; # remove dot before extension
         my $ignorePattern = _escapedJoin( "|", $rule->{"ignore"}->{"name"}, "" ); # filenames to ignore
         my $ignorePatternFiletype = _escapedJoin( "|", $rule->{"ignore"}->{"filetype"}, "" );
@@ -202,30 +269,24 @@ sub _evaluateSitePrefs {
     my $object = Foswiki::Prefs->new($session);
     $object->loadSitePreferences();
     my @customPrefs = ();
-    my $urlHost = quotemeta($defaultUrlHost);
     my $sitePreferences = File::Spec->catfile("..","data",$Foswiki::cfg{LocalSitePreferences}=~s /\./\//r);
 
     foreach my $rule (@sitePrefRules){
         my $prefKey = $rule->{"preference"} || "";
         if( $prefKey ){
-            my $prefValue = defined $object->getPreference($prefKey) ? $object->getPreference($prefKey) : "missing SitePreference";
+            my $prefValue =  _getExpandedPreference(0, $prefKey, $defaultUrlHost, $object);
             my $defaultValue = $rule->{"standardvalue"} || "";
             my $outputtype = $rule->{"outputtype"} || "custom SitePreference";
             my $defaultType = $rule->{"standardtype"} || "";
 
-            if( $prefValue =~ /%/ ){
-                $prefValue = Foswiki::Func::expandCommonVariables($prefValue) =~ s/$urlHost//r;
-            }
             if( $prefValue ne $defaultValue ){
-                if( $defaultType eq "path" && $prefValue ne "" ){
-                    my $filename = basename( $prefValue );
+                if( $defaultType eq "path" && $prefValue ne "" && $prefValue !~ /^http.*/ ){
                     my $path = File::Spec->catdir( $rootDir, $prefValue );
                     my $url = $defaultUrlHost.$prefValue;
-                    $prefValue = $path.",".$url unless $prefValue =~ /^http.*/;
-                    $prefValue = $filename.",".$outputtype.",".$prefValue;
-                }else{
-                    $prefValue = $prefKey.",".$outputtype.",".$prefValue;
+                    $prefValue = $path.",".$url;
                 }
+                $prefValue = $prefKey.",".$outputtype.",".$prefValue;
+
                 push(@customPrefs, $prefValue);
             }
         }
@@ -236,7 +297,89 @@ sub _evaluateSitePrefs {
     return $returnVal;
 }
 
+
+# checks WebPreference entries against expected default values or list specified WebPreferences
+sub _evaluateWebPrefs {
+    my $defaultUrlHost = shift;
+    my $rootDir = shift;
+    my $returnVal = 1;
+    my @webPrefRules = grep { $_->{"type"} eq 'webpref' } @{ $control{config}->{rules} };
+    my $session = Foswiki->new();
+    my @customPrefs = ();
+
+    foreach my $rule (@webPrefRules){
+
+        my @webs = defined $rule->{"webs"} ? @{ $rule->{"webs"} } : Foswiki::Func::getListOfWebs( "user" );
+        my $ignoreWebs = _escapedJoin("|", $rule->{"ignore"}->{"name"}, "");
+
+        my $output;
+
+        if( $rule->{"action"} eq "list" ){
+            my @preferences = defined $rule->{"preferences"} ? @{ $rule->{"preferences"} } : ();
+            my $outputtype = $rule->{"outputtype"} || "WebPreference listing: ";
+
+            foreach my $web (@webs){
+                # skip ignored webs
+                if( ! ($ignoreWebs && $web =~ /^($ignoreWebs)/ ) ){
+                    foreach my $prefKey (@preferences){                 
+                        my $prefValue = _getExpandedPreference(1, $prefKey, $defaultUrlHost, $web);
+                        $output = $prefKey.",".$outputtype.$web.",".$prefValue;
+                        push(@customPrefs, $output);
+                    }
+                }
+            }
+        }else{
+
+            my $prefKey = $rule->{"preference"} || "";
+            my $defaultValue = $rule->{"standardvalue"} || "";
+            my $outputtype = $rule->{"outputtype"} || "Custom WebPreference: ";
+
+            foreach my $web (@webs){
+                if( !($ignoreWebs && $web =~ /^($ignoreWebs)/ ) && $prefKey ){
+                    my $prefValue = _getExpandedPreference(1, $prefKey, $defaultUrlHost, $web);
+                    # compare pref value against expected value
+                    if( $prefValue ne $defaultValue ){
+                        $output = $prefKey.",".$outputtype.$web.",".$prefValue;
+                        push(@customPrefs, $output);
+                    }
+                }
+            }
+        }
+    }
+
+    $session->finish();
+    $returnVal = _writeCsv(1,\@customPrefs);
+    return $returnVal;
+}
+
+# for WebPreference (1, PrefenreceKey, defaultUrlHost, Web)
+# for SitePreference (0, PreferenceKey, defaultUrlHost, Pref object)
+sub _getExpandedPreference{
+
+    my $isWeb = shift;
+    my $prefKey = shift;
+    my $urlHost = shift;
+    my $web = "";
+    my $object = "";
+    if( $isWeb ){
+        $web = shift;
+    }else{
+        $object = shift;
+    }
+
+    my $prefValue = $isWeb ? Foswiki::Func::getPreferencesValue( $prefKey, $web ) : $object->getPreference($prefKey);
+    $prefValue = defined $prefValue ? $prefValue : "Missing Preference";
+
+    # expand macros 
+    if( $prefValue =~ /%/ ){
+        $prefValue = Foswiki::Func::expandCommonVariables($prefValue) =~ s/$urlHost//r;
+    }
+    return $prefValue;
+}
+
+
 # applies _wildcardReplacement on each value in passed array and returns a joined String
+# returns ".*" if passed array is empty and no other default value was passed
 sub _escapedJoin{
     my $separator = shift;
     my $arrayRef = shift;
@@ -313,10 +456,11 @@ sub _getJSONConfig {
 # writes content to a csv file
 # requires sudo -u www-data
 sub _writeCsv {
+    my ($append, $contentRef) = @_;
     my $returnVal = 1;
     my $csvtarget = $control{csvfile};
-    my $append = shift;
-    my @content = @{$_[0]};
+    #my $append = shift;
+    my @content = @{$contentRef};
     return unless @content;
     my $filehandle;
     my $mode = '+>';

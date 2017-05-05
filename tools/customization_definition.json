@@ -163,9 +163,13 @@
         {
             "type": "contrib",
             "standard": [
+                "AuditAppContrib",
                 "CompareRevisionsAddOn",
                 "DBCacheContrib",
+                "FamFamFamContrib",
+                "FastCGIEngineContrib",
                 "FontAwesomeContrib",
+                "InternalProjectsAppContrib",
                 "JQMomentContrib",
                 "JQPluginContrib",
                 "JQPrettyPhotoContrib",
@@ -173,22 +177,36 @@
                 "JQSerialPagerContrib",
                 "JQTwistyContrib",
                 "JSCalendarContrib",
+                "JsonRpcContrib",
                 "LdapContrib",
+                "MailerContrib",
                 "MailTemplatesContrib",
                 "ManualsAppContrib",
                 "MinutesAppContrib",
                 "ModacSkin",
+                "ModPerlEngineContrib",
+                "MultisiteAppContrib",
+                "MultisitePortalAppContrib",
                 "PickADateContrib",
                 "PlainFileStoreContrib",
                 "ProcessesContentContrib",
+                "PostgresContrib",
                 "QwikiContrib",
                 "QwikiFormfieldsContrib",
+                "RCSStoreContrib",
                 "ResubmissionContrib",
                 "RisksAppContrib",
                 "RollenAppContrib",
                 "StandardsAppContrib",
                 "StringifierContrib",
-                "SwitchableLoginManagerContrib"
+                "SwitchableLoginManagerContrib",
+                "TaggedContentContrib",
+                "TipsContrib",
+                "TopicUserMappingContrib",
+                "UnifiedAuthContrib",
+                "VirtualHostingContrib",
+                "WebDAVContrib",
+                "XSendFileContrib"
             ],
             "outputtype": "Contrib"
         },
@@ -221,8 +239,6 @@
         {
             "type": "webpref",
             "action": "list",
-            "webs": [
-            ],
             "ignore": {
                 "name": [
                     "Trash"

@@ -321,7 +321,7 @@ sub _evaluateWebPrefs {
             foreach my $web (@webs){
                 # skip ignored webs
                 if( ! ($ignoreWebs && $web =~ /^($ignoreWebs)/ ) ){
-                    foreach my $prefKey (@preferences){                 
+                    foreach my $prefKey (@preferences){
                         my $prefValue = _getExpandedPreference(1, $prefKey, $defaultUrlHost, $web);
                         $output = $prefKey.",".$outputtype.$web.",".$prefValue;
                         push(@customPrefs, $output);

@@ -1,0 +1,5 @@
+!noci
+data/System/CustomizationIdentifierPlugin.txt 0644 Plugin doc page
+lib/Foswiki/Plugins/CustomizationIdentifierPlugin.pm 0444 Plugin Perl module
+tools/customization_identifier.pl 0755
+tools/customization_definition.json 0644

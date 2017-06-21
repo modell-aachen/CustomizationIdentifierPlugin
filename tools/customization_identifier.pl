@@ -269,7 +269,6 @@ sub _evaluateSitePrefs {
     my $object = Foswiki::Prefs->new($session);
     $object->loadSitePreferences();
     my @customPrefs = ();
-    my $sitePreferences = File::Spec->catfile("..","data",$Foswiki::cfg{LocalSitePreferences}=~s /\./\//r);
 
     foreach my $rule (@sitePrefRules){
         my $prefKey = $rule->{"preference"} || "";
